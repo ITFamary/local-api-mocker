@@ -70,3 +70,4 @@ typings/
 
 /webpack-local-api-mocker/test/_mockServer/
 /lib/
+!/package-lock.json
