@@ -1,0 +1,45 @@
+[
+  {
+    "path": "/testForm",
+    "method": "POST",
+    "formParameter": [
+      {
+        "name": "username",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "password",
+        "type": "string",
+        "required": true
+      }
+    ],
+    "result": {
+      "contentSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "enum": [
+              {
+                "__script": "username"
+              }
+            ]
+          },
+          "password": {
+            "type": "string",
+            "enum": [
+              {
+                "__script": "password"
+              }
+            ]
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ]
+      }
+    }
+  }
+]

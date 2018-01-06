@@ -1,0 +1,70 @@
+{
+  "paths": {
+    "/testForm": {
+      "post": {
+        "summary": "test",
+        "description": "description",
+        "consumes": [
+          "application/x-www-form-urlencoded",
+          "multipart/form-data",
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "username",
+            "in": "formData",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "password",
+            "in": "formData",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "schema": {
+              "$ref": "#/definitions/User",
+              "properties": {
+                "username": {
+                  "enum": [
+                    {
+                      "__script": "username"
+                    }
+                  ]
+                },
+                "password": {
+                  "enum": [
+                    {
+                      "__script": "password"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "User": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "username",
+        "password"
+      ]
+    }
+  }
+}

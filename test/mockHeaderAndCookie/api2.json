@@ -1,0 +1,39 @@
+{
+  "paths": {
+    "/test": {
+      "get": {
+        "summary": "test",
+        "description": "description",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "headers": {
+              "n1": {
+                "type": "string",
+                "default": {
+                  "__script": "id"
+                }
+              }
+            },
+            "cookies": {
+              "n2": {
+                "type": "string",
+                "default": {
+                  "__script": "id"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

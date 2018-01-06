@@ -1,0 +1,17 @@
+{
+  "paths": {
+    "/test": {
+      "get": {
+        "summary": "test",
+        "description": "description",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "hold": {}
+          }
+        }
+      }
+    }
+  }
+}

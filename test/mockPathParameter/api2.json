@@ -1,0 +1,50 @@
+{
+  "paths": {
+    "/test/{id}/{branch}": {
+      "get": {
+        "summary": "test",
+        "description": "description",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "branch",
+            "in": "path",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "schema": {
+              "type": "object",
+              "required": [
+                "id",
+                "branch"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "default": {
+                    "__script": "id"
+                  }
+                },
+                "branch": {
+                  "type": "string",
+                  "default": {
+                    "__script": "branch"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
