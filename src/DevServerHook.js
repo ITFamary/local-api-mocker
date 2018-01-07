@@ -8,6 +8,8 @@ import {createServerFromLocalFile} from './ServerCreator';
 import {MockServer} from './MockServer';
 import chokidar from 'chokidar';
 import chalk from 'chalk';
+import write from 'write-file-stdout';
+import util from 'util';
 
 const DEFAULT_PORT = 9090;
 const portFinder = require('portfinder');
@@ -49,10 +51,12 @@ function createProxy(method, path, target) {
 }
 
 function addProxy(server, app, port) {
+    // https://github.com/chimurai/http-proxy-middleware/issues/40#issuecomment-163398924
     server.uris.forEach(data => {
         app.use(data.path, createProxy(data.method, data.path, 'localhost:' + port));
         // console.log('proxy for ', data.path, ' method:', data.method, ' to:' + 'localhost:' + port);
     });
+    return server.uris.length;
 }
 
 function setupServer(devServer, home, watcher) {
@@ -69,7 +73,9 @@ function setupServer(devServer, home, watcher) {
             const {app} = devServer;
             // 添加proxy
 
-            addProxy(server, app, port);
+            var toLog = `${util.format("%j",app._router.stack)}`;
+            var apiLength = addProxy(server, app, port);
+            toLog += `\n\n\n${util.format("%j",app._router.stack)}`;
 
             // 调整 stack，把 historyApiFallback 放到最后
             let lastIndex = null;
@@ -78,7 +84,7 @@ function setupServer(devServer, home, watcher) {
                     lastIndex = index;
                 }
             });
-            const mockAPILength = app._router.stack.length - 1 - lastIndex;
+            // const mockAPILength = app._router.stack.length - 1 - lastIndex;
             if (lastIndex && lastIndex > 0) {
                 const newStack = app._router.stack;
                 newStack.push(newStack[lastIndex - 1]);
@@ -87,10 +93,33 @@ function setupServer(devServer, home, watcher) {
                 app._router.stack = newStack;
             }
 
-            // console.log('there have ', mockAPILength, ' api.');
+            //把 最后一个之外 其他apiLength 都移动到 p开始的位置
+            let firstPareserIndex = null;
+            app._router.stack.forEach((item, index) => {
+                if ((item.name === 'jsonParser' || item.name === 'urlencodedParser') && firstPareserIndex==null) {
+                    firstPareserIndex = index;
+                }
+            });
+            let firstProxyIndex = null;
+            app._router.stack.forEach((item, index) => {
+                if ((item.name === 'handleProxy') && firstProxyIndex==null) {
+                    firstProxyIndex = index;
+                }
+            });
+            toLog += `\n\n\n${util.format("%j",app._router.stack)}`;
+            const newStack = app._router.stack;
+            var apiStacks = newStack.splice(firstProxyIndex,apiLength);
+            toLog += `\n\n\n取出新增的api\n${util.format("%j",apiStacks)}`;
+            toLog += `\n\n\n添加到新位置:${firstPareserIndex}`;
+            for(var i=0;i<apiStacks.length;i++){
+                newStack.splice(firstPareserIndex+i,0,apiStacks[i]);
+            }
+            app._router.stack = newStack;
+            toLog += `\n\n\n${util.format("%j",app._router.stack)}`;
+            // write('same.log',toLog);
 
             watcher(() => {
-                app._router.stack.splice(lastIndex - 1, mockAPILength);
+                app._router.stack.splice(firstPareserIndex - 1, apiLength);
                 if (server) {
                     // console.log(server);
                     server.stop();
@@ -99,7 +128,7 @@ function setupServer(devServer, home, watcher) {
                 hook(devServer);
             });
 
-            resolve({server, mockAPILength});
+            resolve({server, apiLength});
         });
     });
 }
@@ -130,6 +159,10 @@ function hook(devServer) {
     const config = getConfig();
     // 配置中包括 localApiFile 或者 projectId
     // https://www.npmjs.com/package/git-branch
+    hookWithConfig(devServer,config);
+}
+
+function hookWithConfig(devServer,config) {
     if (!config)
         return;
     const {localApiFile, mockDir} = config;
@@ -151,4 +184,4 @@ function hook(devServer) {
     }
 }
 
-module.exports = {hook, shouldHook};
+module.exports = {hook, shouldHook,hookWithConfig};

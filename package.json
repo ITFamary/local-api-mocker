@@ -1,6 +1,6 @@
 {
   "name": "@mingshz/local-api-mocker",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "api-mocker的本地工具 可以构建服务器以及运行服务器",
   "main": "lib/index.js",
   "bin": {
@@ -42,6 +42,7 @@
     "rimraf": "^2.6.1",
     "stream-to-string": "^1.1.0",
     "thread-sleep": "^2.0.0",
+    "write-file-stdout": "0.0.2",
     "yargs": "^10.0.3"
   },
   "devDependencies": {
