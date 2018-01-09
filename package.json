@@ -1,6 +1,6 @@
 {
   "name": "@mingshz/local-api-mocker",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "api-mocker的本地工具 可以构建服务器以及运行服务器",
   "main": "lib/index.js",
   "bin": {

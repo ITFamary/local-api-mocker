@@ -37,7 +37,7 @@ function createProxy(method, path, target) {
         },
         proxyReqPathResolver(req) {
             // console.log('我的要求地址:');
-            return 'http://' + target + path;
+            return 'http://' + target + req.originalUrl;
         },
         // forwardPath(req) {
         //     let matchPath = req.originalUrl;
@@ -118,9 +118,9 @@ function setupServer(devServer, home, watcher) {
             toLog += `\n\n\n${util.format("%j",app._router.stack)}`;
 
             // 测试下将相关代理移除
-            app._router.stack.splice(firstPareserIndex, apiLength);
-            toLog += `\n\n\n${util.format("%j",app._router.stack)}`;
-            write('same.log',toLog);
+            // app._router.stack.splice(firstPareserIndex, apiLength);
+            // toLog += `\n\n\n${util.format("%j",app._router.stack)}`;
+            // write('same.log',toLog);
 
             watcher(() => {
                 app._router.stack.splice(firstPareserIndex, apiLength);
