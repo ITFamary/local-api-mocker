@@ -116,10 +116,14 @@ function setupServer(devServer, home, watcher) {
             }
             app._router.stack = newStack;
             toLog += `\n\n\n${util.format("%j",app._router.stack)}`;
-            // write('same.log',toLog);
+
+            // 测试下将相关代理移除
+            app._router.stack.splice(firstPareserIndex, apiLength);
+            toLog += `\n\n\n${util.format("%j",app._router.stack)}`;
+            write('same.log',toLog);
 
             watcher(() => {
-                app._router.stack.splice(firstPareserIndex - 1, apiLength);
+                app._router.stack.splice(firstPareserIndex, apiLength);
                 if (server) {
                     // console.log(server);
                     server.stop();
