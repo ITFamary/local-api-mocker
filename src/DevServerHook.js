@@ -1,15 +1,18 @@
 // 负责跟webpack devServer 通讯 试试维护
 
-import {join} from "path";
-import proxy from 'express-http-proxy';
-import {existsSync} from 'fs';
-import getPaths from './getPaths';
-import {createServerFromLocalFile} from './ServerCreator';
-import {MockServer} from './MockServer';
-import chokidar from 'chokidar';
-import chalk from 'chalk';
-import write from 'write-file-stdout';
-import util from 'util';
+// import {join} from "path";
+const WebSocket = require('ws');
+const branchFetch = require('git-branch');
+const merge = require('merge');
+const proxy = require('express-http-proxy');
+const {existsSync} = require('fs');
+const chokidar = require('chokidar');
+const chalk = require('chalk');
+// const write = require('write-file-stdout');
+const util = require('util');
+const getPaths = require('./getPaths');
+const {createServerFromLocalFile, createServer} = require('./ServerCreator');
+const {MockServer} = require('./MockServer');
 
 const DEFAULT_PORT = 9090;
 const portFinder = require('portfinder');
@@ -50,6 +53,38 @@ function createProxy(method, path, target) {
     });
 }
 
+
+function toProxy(server, port) {
+    var proxy = {};
+    const mockServerUrl = util.format('http://localhost:%d', port);
+    new Set(server.uris.map(data => {
+        return data.path;
+    })).forEach(uri => {
+        proxy[uri] = {
+            target: mockServerUrl,
+            secure: false
+        };
+    });
+    return proxy;
+}
+
+function setupStaticServer(home, options) {
+    return new Promise((resolve, reject) => {
+        portFinder.basePort = DEFAULT_PORT;
+        portFinder.getPort((err, port) => {
+            if (err) throw err;
+            // 现在port有了
+            // 现在要配置 option
+            var server = new MockServer(home);
+            // 将uris 转换成proxy
+            server.start(port);
+            var myProxy = toProxy(server, port);
+            options.proxy = merge(options.proxy || {}, myProxy);
+            resolve(options);
+        });
+    });
+}
+
 function addProxy(server, app, port) {
     // https://github.com/chimurai/http-proxy-middleware/issues/40#issuecomment-163398924
     server.uris.forEach(data => {
@@ -73,9 +108,9 @@ function setupServer(devServer, home, watcher) {
             const {app} = devServer;
             // 添加proxy
 
-            var toLog = `${util.format("%j",app._router.stack)}`;
+            var toLog = `${util.format("%j", app._router.stack)}`;
             var apiLength = addProxy(server, app, port);
-            toLog += `\n\n\n${util.format("%j",app._router.stack)}`;
+            toLog += `\n\n\n${util.format("%j", app._router.stack)}`;
 
             // 调整 stack，把 historyApiFallback 放到最后
             let lastIndex = null;
@@ -96,26 +131,26 @@ function setupServer(devServer, home, watcher) {
             //把 最后一个之外 其他apiLength 都移动到 p开始的位置
             let firstPareserIndex = null;
             app._router.stack.forEach((item, index) => {
-                if ((item.name === 'jsonParser' || item.name === 'urlencodedParser') && firstPareserIndex==null) {
+                if ((item.name === 'jsonParser' || item.name === 'urlencodedParser') && firstPareserIndex == null) {
                     firstPareserIndex = index;
                 }
             });
             let firstProxyIndex = null;
             app._router.stack.forEach((item, index) => {
-                if ((item.name === 'handleProxy') && firstProxyIndex==null) {
+                if ((item.name === 'handleProxy') && firstProxyIndex == null) {
                     firstProxyIndex = index;
                 }
             });
-            toLog += `\n\n\n${util.format("%j",app._router.stack)}`;
+            toLog += `\n\n\n${util.format("%j", app._router.stack)}`;
             const newStack = app._router.stack;
-            var apiStacks = newStack.splice(firstProxyIndex,apiLength);
-            toLog += `\n\n\n取出新增的api\n${util.format("%j",apiStacks)}`;
+            var apiStacks = newStack.splice(firstProxyIndex, apiLength);
+            toLog += `\n\n\n取出新增的api\n${util.format("%j", apiStacks)}`;
             toLog += `\n\n\n添加到新位置:${firstPareserIndex}`;
-            for(var i=0;i<apiStacks.length;i++){
-                newStack.splice(firstPareserIndex+i,0,apiStacks[i]);
+            for (var i = 0; i < apiStacks.length; i++) {
+                newStack.splice(firstPareserIndex + i, 0, apiStacks[i]);
             }
             app._router.stack = newStack;
-            toLog += `\n\n\n${util.format("%j",app._router.stack)}`;
+            toLog += `\n\n\n${util.format("%j", app._router.stack)}`;
 
             // 测试下将相关代理移除
             // app._router.stack.splice(firstPareserIndex, apiLength);
@@ -137,13 +172,59 @@ function setupServer(devServer, home, watcher) {
     });
 }
 
-function forLocalFile(filePath, devServer, dir, watcher) {
+/**
+ * 使用远程响应作为服务器
+ *
+ * @param {Object} config 相关配置
+ * @param {String} dir 目录
+ * @returns {Promise<String>} 完成建立之后的目录
+ */
+function forRemote(config, dir) {
+    // https://www.npmjs.com/package/git-branch
+    var branchPromise;
+    if (config.branch)
+        branchPromise = Promise.resolve(config.branch);
+    else {
+        branchPromise = new Promise((resolve, reject) => {
+            branchFetch((err, str) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve(str);
+            })
+        });
+    }
+
+    return new Promise((resolve, reject) => {
+        branchPromise
+            .then(branch => {
+                createServer(config.ssl ? 'https://' : 'http://' + config.apiServerHost + '/projectApiJson/' + config.projectId + '/' + branch, dir
+                    , () => {
+                        config.branch = branch;
+                        resolve(dir);
+                    });
+            })
+            .catch(err => reject(err));
+    })
+
+}
+
+/**
+ * 使用本地文件建立服务器
+ * @param {String} filePath 本地api文件
+ * @param {String} dir 目录
+ * @returns {Promise<String>} 完成建立之后的目录
+ */
+function forLocalFile(filePath, dir) {
     // Promise
     return new Promise((resolve, reject) => {
         createServerFromLocalFile(filePath, dir, function () {
             resolve(dir);
         });
-    }).then(dir => setupServer(devServer, dir, watcher));
+    })
+        // .then(dir => setupServer(devServer, dir, watcher))
+        ;
 }
 
 /**
@@ -162,11 +243,20 @@ function shouldHook() {
 function hook(devServer) {
     const config = getConfig();
     // 配置中包括 localApiFile 或者 projectId
-    // https://www.npmjs.com/package/git-branch
-    hookWithConfig(devServer,config);
+
+    hookWithConfig(devServer, config);
 }
 
-function hookWithConfig(devServer,config) {
+/**
+ * 静态hook，一次性给出新的webpack dev server options
+ * @param {*} options
+ */
+function staticHook(options) {
+    const config = getConfig();
+    return hookWithConfig(null, config, options);
+}
+
+function hookWithConfig(devServer, config, options) {
     if (!config)
         return;
     const {localApiFile, mockDir} = config;
@@ -174,9 +264,11 @@ function hookWithConfig(devServer,config) {
 
     // 锁定本地文件，若更新时 则放弃掉原MockServer并且调整devServer的Proxy
     // 研究下这个devServer到底是什么鬼 可以api化的空间
-
+    var forDir;
+    var watcher;
     if (localApiFile) {
-        forLocalFile(localApiFile, devServer, mockServerDir, function (target) {
+        forDir = forLocalFile(localApiFile, mockServerDir);
+        watcher = function (target) {
             const watcher = chokidar.watch(localApiFile);
 
             watcher.on('change', path => {
@@ -184,8 +276,35 @@ function hookWithConfig(devServer,config) {
                 target();
                 watcher.close();
             })
-        });
+        };
+    } else if (config.projectId) {
+        config.apiServerHost = config.apiServerHost || 'csm.lmjia.cn';
+        config.useGitBranch = config.useGitBranch || !config.branch;
+        forDir = forRemote(config, mockServerDir);
+        watcher = function (target) {
+            forDir.then(() => {
+                const url = config.ssl ? 'wss' : 'ws' + '://' + config.apiServerHost + '/watchProjectApi/' + config.projectId + '/' + config.branch;
+                console.debug('target url:' + url);
+                const ws = new WebSocket(url);
+                ws.onopen = () => {
+                    console.debug('open webSocket!');
+                };
+                ws.onmessage = evt => {
+                    console.log(chalk.green('ONLINE CHANGED: ', evt.data));
+                    target();
+                    ws.close();
+                }
+            });
+        };
+    } else
+        throw 'localApiFile必须被声明';
+
+    if (devServer != null) {
+        return forDir
+            .then(() => setupServer(devServer, mockServerDir, watcher));
+    } else {
+        return forDir.then(dir => setupStaticServer(dir, options));
     }
 }
 
-module.exports = {hook, shouldHook,hookWithConfig};
+module.exports = {hook, staticHook, shouldHook, hookWithConfig};

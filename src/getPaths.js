@@ -6,7 +6,7 @@ function resolveOwn(relativePath) {
     return resolve(__dirname, relativePath);
 }
 
-export default function (cwd) {
+module.exports = function (cwd) {
     const appDirectory = realpathSync(cwd);
 
     function resolveApp(relativePath) {
@@ -23,4 +23,4 @@ export default function (cwd) {
         resolveApp,
         appDirectory,
     };
-}
+};

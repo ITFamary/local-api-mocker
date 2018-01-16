@@ -1,6 +1,6 @@
 {
   "name": "@mingshz/local-api-mocker",
-  "version": "0.0.5",
+  "version": "0.0.8",
   "description": "api-mocker的本地工具 可以构建服务器以及运行服务器",
   "main": "lib/index.js",
   "bin": {
@@ -22,7 +22,6 @@
   "author": "CJ",
   "license": "ISC",
   "dependencies": {
-    "@mingshz/api-mocker": "0.0.1",
     "body-parser": "^1.18.2",
     "chalk": "^2.3.0",
     "chokidar": "^2.0.0",
@@ -30,6 +29,7 @@
     "cookie-parser": "^1.4.3",
     "express-http-proxy": "^1.1.0",
     "get-uri": "^2.0.1",
+    "git-branch": "^1.0.0",
     "glob": "^7.1.2",
     "json-schema-faker": "^0.4.6",
     "json-schema-ref-parser": "^4.0.4",
@@ -43,6 +43,7 @@
     "stream-to-string": "^1.1.0",
     "thread-sleep": "^2.0.0",
     "write-file-stdout": "0.0.2",
+    "ws": "^4.0.0",
     "yargs": "^10.0.3"
   },
   "devDependencies": {
