@@ -84,7 +84,7 @@ server.post(
                     }, context);
                     // res.set("Content-Type", "application/json");
                     exportJson(definitions, jsonSchema).then(json => {
-                        res.send(json);
+                        res.status(200).send(json);
                     });
                 });
 

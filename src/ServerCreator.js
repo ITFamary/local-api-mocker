@@ -202,6 +202,7 @@ function renderResultCode(result, end = false) {
             Buffer.from(util.format('res.redirect(%s);\n', generateCodeFromPart(redirectTarget, 'redirectTarget'))),
             Buffer.concat([cookieBuffer, headerBuffer]), end);
     }
+    var code = result.status || 200;
     // 需要我们处理的结果
     if (result.schema) {
         var s1 = util.format('var jsonSchema = buildJsonSchema(%j,context);\n', result.schema);
@@ -211,12 +212,11 @@ function renderResultCode(result, end = false) {
             s2 = util.format('res.set("Content-Type", %s);\n', ct);
         } else
             s2 = '';
-        var s3 = 'exportJson(definitions,jsonSchema).then(json => {\n' +
-            '                res.send(json);\n' +
-            '            });\n';
+        var s3 = util.format('exportJson(definitions,jsonSchema).then(json => {\n' +
+            '                res.status(%d).send(json);\n' +
+            '            });\n',code);
         return _renderResultCode(sleepBuffer, Buffer.from(s1 + s2 + s3), Buffer.concat([cookieBuffer, headerBuffer]), end);
     }
-    var code = result.status || 200;
     if (result.statusText) {
         return _renderResultCode(sleepBuffer, Buffer.from(util.format('res.status(%d).send("%s");\n', code, result.statusText))
             , Buffer.concat([cookieBuffer, headerBuffer]), end);

@@ -19,7 +19,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "210": {
             "description": "ok",
             "schema": {
               "type": "object",
