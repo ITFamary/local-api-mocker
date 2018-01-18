@@ -139,6 +139,10 @@ describe("MockServer", function () {
             const server = new MockServer(dir + "/mockSleep");
             // server.start();
         });
+        it("建议响应", function () {
+            const server = new MockServer(dir + "/mockSimpleContent");
+            // server.start();
+        });
 
     })
 });

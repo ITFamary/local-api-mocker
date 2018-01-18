@@ -84,5 +84,8 @@ describe('ServerCreator', function () {
         it('休眠', function () {
             return assertSameCode("mockSleep");
         });
+        it('建议响应', function () {
+            return assertSameCode("mockSimpleContent");
+        });
     });
 });

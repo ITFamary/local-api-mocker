@@ -1,0 +1,19 @@
+{
+  "paths": {
+    "/test2": {
+      "get": {
+        "summary": "test",
+        "description": "description",
+        "responses": {
+          "210": {
+            "description": "ok",
+            "schema": {
+              "type":"string",
+              "default":"foo"
+            }
+          }
+        }
+      }
+    }
+  }
+}
