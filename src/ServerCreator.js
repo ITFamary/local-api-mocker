@@ -290,10 +290,10 @@ function toProxyPath(path) {
 }
 
 function createServer(remoteFile, dir, cb) {
-    console.debug("create server from ", remoteFile, " to ", dir);
+    // console.debug("create server from ", remoteFile, " to ", dir);
     getUri(remoteFile, (err, rs) => {
         if (err) throw err;
-        console.debug('get remote response');
+        // console.debug('get remote response');
         if (fs.existsSync(dir)) {
             rimraf.sync(dir);
             // fs.rmdirSync(dir);
@@ -308,7 +308,7 @@ function createServer(remoteFile, dir, cb) {
             var list = JSON.parse(str);
             var definitions = list.definitions;
             let writeApi = function (path, method, api) {
-                console.debug('path:', path, ',method:', method);
+                // console.debug('path:', path, ',method:', method);
                 // 确定文件名
                 var newPath = path.replace('/', '-');
                 while (newPath.search('/') !== -1)
@@ -316,7 +316,7 @@ function createServer(remoteFile, dir, cb) {
                 // while (newPath.search(':') !== -1)
                 //     newPath = newPath.replace(':', '-');
                 var fileName = dir + "/" + method + "-" + newPath + ".js";
-                console.debug(fileName);
+                // console.debug(fileName);
                 // 把 uriParameter formParameter jsonParameter 提取到object中
                 var parameterSpecifications = {};
                 arrayToObjectJSON(parameterSpecifications, api.parameters);

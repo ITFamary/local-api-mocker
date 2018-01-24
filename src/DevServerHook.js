@@ -256,6 +256,24 @@ function staticHook(options) {
     return hookWithConfig(null, config, options);
 }
 
+function createWebSocket(config ,target) {
+    const url = config.ssl ? 'wss' : 'ws' + '://' + config.apiServerHost + '/watchProjectApi/' + config.projectId + '/' + config.branch;
+    // console.debug('target url:' + url);
+    const ws = new WebSocket(url);
+    // ws.onopen = () => {
+    //     console.debug('open webSocket!');
+    // };
+    ws.onmessage = evt => {
+        console.log(chalk.green('ONLINE CHANGED: ', evt.data));
+        target();
+        ws.close();
+    };
+    ws.onclose = evt => {
+        console.log(chalk.red('RECONNECT...'));
+        createWebSocket(config, target);
+    }
+}
+
 function hookWithConfig(devServer, config, options) {
     if (!config)
         return;
@@ -283,17 +301,7 @@ function hookWithConfig(devServer, config, options) {
         forDir = forRemote(config, mockServerDir);
         watcher = function (target) {
             forDir.then(() => {
-                const url = config.ssl ? 'wss' : 'ws' + '://' + config.apiServerHost + '/watchProjectApi/' + config.projectId + '/' + config.branch;
-                console.debug('target url:' + url);
-                const ws = new WebSocket(url);
-                ws.onopen = () => {
-                    console.debug('open webSocket!');
-                };
-                ws.onmessage = evt => {
-                    console.log(chalk.green('ONLINE CHANGED: ', evt.data));
-                    target();
-                    ws.close();
-                }
+                createWebSocket(config, target);
             });
         };
     } else
