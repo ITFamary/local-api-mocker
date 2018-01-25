@@ -33,6 +33,21 @@ function getConfig() {
     }
 }
 
+function jsonUrlFromConfig(config, branch) {
+    return (config.ssl ? 'https://' : 'http://') + config.apiServerHost + '/projectApiJson/'
+        + config.projectId + '/' + (branch || config.branch);
+}
+
+function watchUrlFromConfig(config, branch) {
+    return (config.ssl ? 'wss' : 'ws') + '://' + config.apiServerHost + '/watchProjectApi/' + config.projectId + '/'
+        + (branch || config.branch);
+}
+
+function editorUrlFromConfig(config, branch) {
+    return (config.ssl ? 'https' : 'http') + '://' + config.apiServerHost +
+        '/editor/' + config.projectId + '/' + (branch || config.branch);
+}
+
 function createProxy(method, path, target) {
     return proxy(target, {
         filter(req) {
@@ -209,18 +224,22 @@ function forRemote(config, dir) {
             })
         });
     }
-    return new Promise((resolve, reject) => {
-        branchPromise
-            .then(branch => {
-                createServer(config.ssl ? 'https://' : 'http://' + config.apiServerHost + '/projectApiJson/' + config.projectId + '/' + branch, dir)
-                    .then(() => {
-                        config.branch = branch;
-                        resolve(dir);
-                    }).catch(reject);
-            })
-            .catch(reject);
-    })
-
+    return branchPromise
+        .then(branch => {
+            return createServer(jsonUrlFromConfig(config, branch), dir)
+                .then(() => dir);
+        });
+    // return new Promise((resolve, reject) => {
+    //     branchPromise
+    //         .then(branch => {
+    //             createServer(config.ssl ? 'https://' : 'http://' + config.apiServerHost + '/projectApiJson/' + config.projectId + '/' + branch, dir)
+    //                 .then(() => {
+    //                     config.branch = branch;
+    //                     resolve(dir);
+    //                 }).catch(reject);
+    //         })
+    //         .catch(reject);
+    // });
 }
 
 /**
@@ -265,7 +284,7 @@ function staticHook(options) {
 }
 
 function createWebSocket(config, target) {
-    const url = config.ssl ? 'wss' : 'ws' + '://' + config.apiServerHost + '/watchProjectApi/' + config.projectId + '/' + config.branch;
+    const url = watchUrlFromConfig(config);
     // console.debug('target url:' + url);
     const ws = new WebSocket(url);
     // ws.onopen = () => {
@@ -289,16 +308,15 @@ function createWebSocket(config, target) {
             })
             .catch((e) => {
                 WIP = false;
-                console.error(e);
-                console.log(chalk.cyan('Please visit ' + config.ssl ? 'https' : 'http' + '://' + config.apiServerHost +
-                    '/editor/' + config.projectId + '/' + config.branch + ' to make right.'));
+                console.log(e);
+                console.log(chalk.cyan('Please visit ' + editorUrlFromConfig(config) + ' for correcting it.'));
             });
         WIP = true;
     };
     ws.onclose = () => {
         if (jobFinish)
             return;
-        console.log(chalk.red('RECONNECT...'));
+        console.log(chalk.red('Socket Closed! RECONNECT...'));
         createWebSocket(config, target);
     }
 }
