@@ -214,7 +214,7 @@ function renderResultCode(result, end = false) {
             s2 = '';
         var s3 = util.format('exportJson(definitions,jsonSchema).then(json => {\n' +
             '                res.status(%d).send(json);\n' +
-            '            });\n',code);
+            '            });\n', code);
         return _renderResultCode(sleepBuffer, Buffer.from(s1 + s2 + s3), Buffer.concat([cookieBuffer, headerBuffer]), end);
     }
     if (result.statusText) {
@@ -289,112 +289,121 @@ function toProxyPath(path) {
     return input;
 }
 
-function createServer(remoteFile, dir, cb) {
+function createServer(remoteFile, dir) {
     // console.debug("create server from ", remoteFile, " to ", dir);
-    getUri(remoteFile, (err, rs) => {
-        if (err) throw err;
-        // console.debug('get remote response');
-        if (fs.existsSync(dir)) {
-            rimraf.sync(dir);
-            // fs.rmdirSync(dir);
-        }
+    return new Promise((resolve, reject) => {
+        getUri(remoteFile, (err, rs) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            // console.debug('get remote response');
+            if (fs.existsSync(dir)) {
+                rimraf.sync(dir);
+            }
 
-        fs.mkdirSync(dir);
-        // mock 服务器的结构 应该是
+            fs.mkdirSync(dir);
+            // mock 服务器的结构 应该是
 
-        // rs.setEncoding('utf8');
-        toString(rs, 'utf8').then(str => {
-            var allPromises = [];
-            var list = JSON.parse(str);
-            var definitions = list.definitions;
-            let writeApi = function (path, method, api) {
-                // console.debug('path:', path, ',method:', method);
-                // 确定文件名
-                var newPath = path.replace('/', '-');
-                while (newPath.search('/') !== -1)
-                    newPath = newPath.replace('/', '-');
-                // while (newPath.search(':') !== -1)
-                //     newPath = newPath.replace(':', '-');
-                var fileName = dir + "/" + method + "-" + newPath + ".js";
-                // console.debug(fileName);
-                // 把 uriParameter formParameter jsonParameter 提取到object中
-                var parameterSpecifications = {};
-                arrayToObjectJSON(parameterSpecifications, api.parameters);
+            // rs.setEncoding('utf8');
+            toString(rs, 'utf8')
+                .then(str => {
+                    var allPromises = [];
+                    var list = JSON.parse(str);
+                    var definitions = list.definitions;
+                    let writeApi = function (path, method, api) {
+                        // console.debug('path:', path, ',method:', method);
+                        // 确定文件名
+                        var newPath = path.replace('/', '-');
+                        while (newPath.search('/') !== -1)
+                            newPath = newPath.replace('/', '-');
+                        // while (newPath.search(':') !== -1)
+                        //     newPath = newPath.replace(':', '-');
+                        var fileName = dir + "/" + method + "-" + newPath + ".js";
+                        // console.debug(fileName);
+                        // 把 uriParameter formParameter jsonParameter 提取到object中
+                        var parameterSpecifications = {};
+                        arrayToObjectJSON(parameterSpecifications, api.parameters);
 
 
-                // 输入标准
-                var parameterSpecificationsBuffer = Buffer.concat([
-                    Buffer.from('var parameterSpecifications = '),
-                    Buffer.from(JSON.stringify(parameterSpecifications)),
-                    Buffer.from(';\n'),
-                    Buffer.from('var definitions = '),
-                    Buffer.from(!definitions ? 'null' : JSON.stringify(definitions)),
-                    Buffer.from(';\n')
-                ]);
-                // 输入代码
+                        // 输入标准
+                        var parameterSpecificationsBuffer = Buffer.concat([
+                            Buffer.from('var parameterSpecifications = '),
+                            Buffer.from(JSON.stringify(parameterSpecifications)),
+                            Buffer.from(';\n'),
+                            Buffer.from('var definitions = '),
+                            Buffer.from(!definitions ? 'null' : JSON.stringify(definitions)),
+                            Buffer.from(';\n')
+                        ]);
+                        // 输入代码
 
-                // exceptedContentType
-                var exceptedContentType = writeExceptedContentType(api.consumes);
-                // 参数
-                var parameterBuffer = Buffer.concat([
-                    Buffer.from('var parameters = {};\n'),
-                    writeParameter(api.parameters),
-                    Buffer.from('var errors = validParameter(parameters, parameterSpecifications,definitions);\n' +
-                        '        if (errors && errors.length>0) {\n' +
-                        '            console.debug(errors);\n' +
-                        '            res\n' +
-                        '                .status(400)\n' +
-                        '                .send(errors);\n' +
-                        '            return;\n' +
-                        '        }\n')
-                ]);
-                // 结果处理
-                //// 上下文建立
-                var contentCodeBuffer = createVMContentBuffer();
-                var resultCodeBuffer = createResultCode(api.responses);
+                        // exceptedContentType
+                        var exceptedContentType = writeExceptedContentType(api.consumes);
+                        // 参数
+                        var parameterBuffer = Buffer.concat([
+                            Buffer.from('var parameters = {};\n'),
+                            writeParameter(api.parameters),
+                            Buffer.from('var errors = validParameter(parameters, parameterSpecifications,definitions);\n' +
+                                '        if (errors && errors.length>0) {\n' +
+                                '            console.debug(errors);\n' +
+                                '            res\n' +
+                                '                .status(400)\n' +
+                                '                .send(errors);\n' +
+                                '            return;\n' +
+                                '        }\n')
+                        ]);
+                        // 结果处理
+                        //// 上下文建立
+                        var contentCodeBuffer = createVMContentBuffer();
+                        var resultCodeBuffer = createResultCode(api.responses);
 
-                // , upload.array()
-                // 确认下风险，
-                // 1，是否会影响正常form 测试代码
-                // 2, 是否会影响json请求 测试代码
-                // 3, 多包是否正常工作
-                // 其他改进，formParameter 将优先从body中获取 没有则从query中
-                var codeBefore = Buffer.from(util.format('server.%s("%s", upload.array(), function (req, res, next) {\n'
-                    , method.toLowerCase(), toExpressPath(path)));
+                        // , upload.array()
+                        // 确认下风险，
+                        // 1，是否会影响正常form 测试代码
+                        // 2, 是否会影响json请求 测试代码
+                        // 3, 多包是否正常工作
+                        // 其他改进，formParameter 将优先从body中获取 没有则从query中
+                        var codeBefore = Buffer.from(util.format('server.%s("%s", upload.array(), function (req, res, next) {\n'
+                            , method.toLowerCase(), toExpressPath(path)));
 
-                var codeEnd = Buffer.from('});\n');
+                        var codeEnd = Buffer.from('});\n');
 
-                // 文件输出
-                var stream = fs.createWriteStream(fileName, {encoding: 'utf8'});
-                // stream.write();
+                        // 文件输出
+                        var stream = fs.createWriteStream(fileName, {encoding: 'utf8'});
+                        // stream.write();
 
-                allPromises.push(new Promise(function (resolve, reject) {
-                    stream.end(Buffer.concat([
-                        codeBefore,
-                        exceptedContentType,
-                        parameterSpecificationsBuffer,
-                        parameterBuffer,
-                        contentCodeBuffer,
-                        resultCodeBuffer,
-                        codeEnd,
-                        Buffer.from(util.format('\n__result={\n' +
-                            '    path:"%s",\n' +
-                            '    method:"%s"\n' +
-                            '};\n', toProxyPath(path), method))
-                    ]), resolve);
-                }));
-            };
+                        allPromises.push(new Promise(function (resolve_1, reject_1) {
+                            try {
+                                stream.end(Buffer.concat([
+                                    codeBefore,
+                                    exceptedContentType,
+                                    parameterSpecificationsBuffer,
+                                    parameterBuffer,
+                                    contentCodeBuffer,
+                                    resultCodeBuffer,
+                                    codeEnd,
+                                    Buffer.from(util.format('\n__result={\n' +
+                                        '    path:"%s",\n' +
+                                        '    method:"%s"\n' +
+                                        '};\n', toProxyPath(path), method))
+                                ]), resolve_1);
+                            } catch (e) {
+                                reject_1(e);
+                            }
+                        }));
+                    };
 
-            Object.keys(list.paths).forEach(path => {
-                // 这个path 是定义的path 需要转换成express的path
-                var apiOnThisPath = list.paths[path];
-                Object.keys(apiOnThisPath).forEach(method => {
-                    writeApi(path, method, apiOnThisPath[method]);
-                });
-            });
-            Promise.all(allPromises).then(cb);
+                    Object.keys(list.paths).forEach(path => {
+                        // 这个path 是定义的path 需要转换成express的path
+                        var apiOnThisPath = list.paths[path];
+                        Object.keys(apiOnThisPath).forEach(method => {
+                            writeApi(path, method, apiOnThisPath[method]);
+                        });
+                    });
+                    Promise.all(allPromises).then(resolve).catch(reject);
+                })
+                .catch(reject);
         });
-
     });
 }
 
@@ -403,17 +412,17 @@ module.exports = {
      * 从本地文件中创建服务器
      * @param filePath 本地文件
      * @param dir 工作目录
-     * @param cb 完成回调
+     * @return Promise of any
      */
-    createServerFromLocalFile(filePath, dir, cb) {
-        createServer(path.join('file://', path.resolve(filePath)), dir, cb);
+    createServerFromLocalFile(filePath, dir) {
+        createServer(path.join('file://', path.resolve(filePath)), dir);
     },
 
     /**
      * 创建服务器目录结构
      * @param remoteFile 远程文件
      * @param dir 目录
-     * @param cb
+     * @return Promise of any
      */
     createServer: createServer
 };

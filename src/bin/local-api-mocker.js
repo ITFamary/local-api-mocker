@@ -41,13 +41,17 @@ yargs.parse(process.argv.slice(2), (err, argv, output) => {
 
         if (arg.fetch) {
             // 开始从远程服务器抓取
-            createServer(arg.fetchTarget, arg.workingDir, () => {
-                console.log('Mock Server Created');
-                if (arg.start) {
-                    var server = new MockServer(arg.workingDir);
-                    server.start();
-                }
-            });
+            createServer(arg.fetchTarget, arg.workingDir)
+                .then(() => {
+                    console.log('Mock Server Created');
+                    if (arg.start) {
+                        var server = new MockServer(arg.workingDir);
+                        server.start();
+                    }
+                })
+                .catch(e => {
+                    console.error(e);
+                });
         } else if (arg.start) {
             var server = new MockServer(arg.workingDir);
             server.start();

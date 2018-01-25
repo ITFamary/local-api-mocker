@@ -30,7 +30,9 @@ describe('ServerCreator', function () {
         var stream = fs.createWriteStream(entryApiFilePath, {encoding: 'utf8'});
         var promise = new Promise(function (resolve, reject) {
             stream.end(Buffer.from(JSON.stringify(context)), function () {
-                createServer(path.join("file://", entryApiFilePath), workingDir, resolve);
+                createServer(path.join("file://", entryApiFilePath), workingDir)
+                    .then(resolve)
+                    .catch(reject);
             });
         });
 
@@ -47,9 +49,11 @@ describe('ServerCreator', function () {
             // readFile
             const generatedCode = fs.readFileSync(files[0], {encoding: 'utf8'});
             assert.equal(UglifyJS.minify(generatedCode).code, UglifyJS.minify(code).code, '生成的文件需符合要求');
-
-
-        });
+        })
+            .catch(e => {
+                console.error(e);
+                assert.equal(true, false, '必须没有错误');
+            });
 
     }
 
