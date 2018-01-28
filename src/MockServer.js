@@ -47,7 +47,9 @@ class MockServer {
         // const router = jsonServer.router('db.json');
         const middlewares = jsonServer.defaults();
 
-        this.server.use(bodyParser.json()); // for parsing application/json
+        this.server.use(bodyParser.json({
+            strict: false,
+        })); // for parsing application/json
         this.server.use(bodyParser.urlencoded({extended: true})); // for parsing application/x-www-form-urlencoded
         this.server.use(cookieParser());
 
