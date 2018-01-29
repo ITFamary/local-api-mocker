@@ -1,3 +1,3 @@
-GET http://localhost:3000/test2
-
+PUT http://localhost:3000/test2
+Content-Type: application/json
 ###

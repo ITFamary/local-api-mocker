@@ -19,6 +19,57 @@ describe("MockServer", function () {
         });
     });
     describe('validParameter', function () {
+        it('校验单独的布尔', function () {
+            const server = new MockServer(dir + "/mockSimpleContent");
+            var rs = server.validParameter(
+                {
+                    enable: 'hello'
+                }, {
+                    enable: {
+                        schema:{
+                            type: 'boolean',
+                            required: true,
+                        }
+                    }
+                }, {
+                }
+            );
+            console.log(rs);
+            assert.equal(rs.length, 1, '发现有错误');
+
+            rs = server.validParameter(
+                {
+                    enable: true
+                }, {
+                    enable: {
+                        schema:{
+                            type: 'boolean',
+                            required: true,
+                        }
+                    }
+                }, {
+                }
+            );
+            console.log(rs);
+            assert.equal(rs.length, 0, '没毛病');
+
+            rs = server.validParameter(
+                {
+                    enable: false
+                }, {
+                    enable: {
+                        schema:{
+                            type: 'boolean',
+                            required: true,
+                        }
+                    }
+                }, {
+                }
+            );
+            console.log(rs);
+            assert.equal(rs.length, 0, '没毛病');
+
+        });
         it('校验复杂数据', function () {
             const server = new MockServer(dir + "/mockMultipartRequest");
             var rs = server.validParameter(
@@ -139,8 +190,12 @@ describe("MockServer", function () {
             const server = new MockServer(dir + "/mockSleep");
             // server.start();
         });
-        it("建议响应", function () {
+        it("简易响应", function () {
             const server = new MockServer(dir + "/mockSimpleContent");
+            // server.start();
+        });
+        it("内容处理", function () {
+            const server = new MockServer(dir + "/mockEntityBody");
             // server.start();
         });
 

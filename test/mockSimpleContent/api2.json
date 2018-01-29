@@ -1,15 +1,25 @@
 {
   "paths": {
     "/test2": {
-      "get": {
+      "put": {
         "summary": "test",
         "description": "description",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "enable",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "210": {
             "description": "ok",
             "schema": {
-              "type":"string",
-              "default":"foo"
+              "type": "string",
+              "default": "foo"
             }
           }
         }

@@ -50,10 +50,11 @@ describe('ServerCreator', function () {
             const generatedCode = fs.readFileSync(files[0], {encoding: 'utf8'});
             assert.equal(UglifyJS.minify(generatedCode).code, UglifyJS.minify(code).code, '生成的文件需符合要求');
         })
-            .catch(e => {
-                console.error(e);
-                assert.equal(true, false, '必须没有错误');
-            });
+            // .catch(e => {
+            //     console.error(e);
+            //     assert.equal(true, false, '必须没有错误');
+            // })
+            ;
 
     }
 

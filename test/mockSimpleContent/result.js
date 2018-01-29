@@ -1,11 +1,20 @@
-server.get(
+server.put(
     "/test2", upload.array(), function (req, res, next) {
         // if (!req.is("application/x-www-form-urlencoded") && !req.is("multipart/form-data")) {
         //     res.status(400).end("bad content type");
         //     return;
         // }
         var definitions = null;
-        var parameterSpecifications = {};
+        var parameterSpecifications = {
+            "enable": {
+                // "in": "body",
+                // "name": "enable",
+                "required": true,
+                "schema": {
+                    "type": "boolean"
+                }
+            }
+        };
         // 初始化 parameters
         var parameters = {};
         // 获取所有的parameters
@@ -13,7 +22,7 @@ server.get(
         // parameters.goodId = req.params.goodId;
         // Query
         // Json
-        // parameters.price = req.body.price;
+        parameters.enable = req.body;
 
         // 参数必须符合规格
         var errors = validParameter(parameters, parameterSpecifications, definitions);
@@ -47,5 +56,5 @@ server.get(
 );
 __result = {
     path: "/test2",
-    method: "get"
+    method: "put"
 };

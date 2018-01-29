@@ -181,7 +181,7 @@ class MockServer {
         var errors = [];
         Object.keys(parameterSpecifications).forEach(function (name) {
             var val = parameterSpecifications[name];
-            if (val.required && !parameters[name]) {
+            if (val.required && (parameters[name] === null || parameters[name] === undefined)) {
                 errors.push({
                     name,
                     errors: [new ValidationError("required")]
@@ -222,7 +222,7 @@ class MockServer {
         // var errors = {};
         Object.keys(parameterSpecifications).forEach(function (name) {
             var val = parameterSpecifications[name];
-            if (val.required && !parameters[name]) {
+            if (val.required && (parameters[name] === null || parameters[name] === undefined)) {
                 // result = false;
                 promises.push(Promise.resolve({
                     name,
