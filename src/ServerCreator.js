@@ -304,10 +304,13 @@ function createServer(remoteFile, dir) {
 
             fs.mkdirSync(dir);
             // mock 服务器的结构 应该是
-
+            
             // rs.setEncoding('utf8');
             toString(rs, 'utf8')
                 .then(str => {
+                    var apiStream = fs.createWriteStream(dir+'/api.json', {encoding: 'utf8'});
+                    apiStream.end(str);
+                    
                     var allPromises = [];
                     var list = JSON.parse(str);
                     var definitions = list.definitions;
